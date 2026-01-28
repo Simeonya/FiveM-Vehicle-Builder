@@ -1,1 +1,1 @@
-rootProject.name = "fivem-car-extractor"
+rootProject.name = "fivem-vehicle-builder"
