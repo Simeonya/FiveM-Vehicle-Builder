@@ -16,8 +16,16 @@ public class ImportItem {
     private final StringProperty type = new SimpleStringProperty();
     private final Path path;
 
+    /**
+     * True when this item was restored from a .sfvb project file.
+     * Its files are already extracted into a temp directory, so the RPF
+     * extractor must never be invoked again for this item.
+     */
+    private final boolean fromProject;
+
     public ImportItem(Path path) {
         this.path = path.toAbsolutePath();
+        this.fromProject = false;
         inputPath.set(this.path.toString());
 
         String guessed = guessNameFromPath(this.path);
@@ -29,6 +37,21 @@ public class ImportItem {
         } else {
             type.set(this.path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".rpf") ? "RPF" : "File");
         }
+    }
+
+    /**
+     * Deserialisation constructor — files are already extracted into a temp
+     * directory. isRpf() always returns false for these items so the extractor
+     * is never called again.
+     */
+    public ImportItem(Path extractedTempDir, String vehicleName, String resourceName) {
+        this.path = extractedTempDir.toAbsolutePath();
+        this.fromProject = true;
+        inputPath.set(this.path.toString());
+
+        this.vehicleName.set(StringUtil.sanitize(vehicleName));
+        this.resourceName.set(StringUtil.sanitize(resourceName));
+        type.set("Project");
     }
 
     private static String guessNameFromPath(Path p) {
@@ -45,12 +68,17 @@ public class ImportItem {
     }
 
     public boolean isDirectory() {
-        return Files.isDirectory(path);
+        return fromProject || Files.isDirectory(path);
     }
 
     public boolean isRpf() {
+        if (fromProject) return false;
         return !Files.isDirectory(path) &&
                 path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".rpf");
+    }
+
+    public boolean isFromProject() {
+        return fromProject;
     }
 
     public String getVehicleName() {
